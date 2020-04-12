@@ -119,8 +119,11 @@ class Note:
   def guid(self, val):
     self._guid = val
 
-  def write_to_db(self, cursor, now_ts, deck_id):
-    cursor.execute('INSERT INTO notes VALUES(null,?,?,?,?,?,?,?,?,?,?);', (
+  def write_to_db(self, cursor, now_ts, deck_id, note_idx):
+    now_ts_milliseconds = now_ts * 1000
+    note_id = now_ts_milliseconds + note_idx
+    cursor.execute('INSERT INTO notes VALUES(?,?,?,?,?,?,?,?,?,?,?);', (
+        note_id,                      # id
         self.guid,                    # guid
         self.model.model_id,          # mid
         now_ts,                       # mod
@@ -133,9 +136,9 @@ class Note:
         '',                           # data
     ))
 
-    note_id = cursor.lastrowid
-    for card in self.cards:
-      card.write_to_db(cursor, now_ts, deck_id, note_id)
+    for card_idx, card in enumerate(self.cards):
+      card_id = now_ts_milliseconds + note_idx * len(self.cards) + card_idx
+      card.write_to_db(cursor, now_ts, deck_id, note_id, card_id)
 
   def _format_fields(self):
     return '\x1f'.join(self.fields)
